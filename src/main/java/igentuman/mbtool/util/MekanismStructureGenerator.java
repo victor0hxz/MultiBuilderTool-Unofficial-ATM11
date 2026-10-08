@@ -1,0 +1,767 @@
+package igentuman.mbtool.util;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static igentuman.mbtool.Mbtool.rl;
+
+public class MekanismStructureGenerator {
+
+    public static MultiblockStructure generate(List<ItemStack> blocks, int height, int width, int length) {
+        if(isSetForTurbine(blocks)) {
+            return generateTurbine(blocks, height, width, length);
+        }
+
+        if(isSetForFissionReactor(blocks)) {
+            return generateFissionReactor(blocks, height, width, length);
+        }
+
+        if(isSetForBoiler(blocks)) {
+            return generateBoiler(blocks, height, width, length);
+        }
+        return null;
+    }
+
+    private static MultiblockStructure generateBoiler(List<ItemStack> blocks, int height, int width, int length) {
+        MultiblockStructure structure = new MultiblockStructure(rl("runtime"), new CompoundTag(), "mekanism_boiler");
+        return structure;
+    }
+
+    private static MultiblockStructure generateFissionReactor(List<ItemStack> blocks, int height, int width, int length) {
+        // Validate dimensions
+        if (!validateDimensions(height, width, length)) {
+            return null;
+        }
+
+        // Create block availability map with stack counts
+        Map<String, Integer> availableBlocks = createBlockAvailabilityMap(blocks);
+        Map<String, Integer> usedBlocks = new HashMap<>();
+
+        CompoundTag nbt = new CompoundTag();
+        ListTag blocksList = new ListTag();
+        ListTag palette = new ListTag();
+        Map<String, Integer> paletteMap = new HashMap<>();
+        AtomicInteger paletteIndex = new AtomicInteger(0);
+
+        // Collect wall positions for port placement (excluding corners and edges)
+        List<BlockPosition> wallPositions = new ArrayList<>();
+
+        // Generate structure
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < length; z++) {
+                    String blockType = determineBlockType(x, y, z, width, height, length, availableBlocks, usedBlocks);
+                    if (blockType != null) {
+                        // Check if we have enough blocks
+                        if (canUseBlock(blockType, availableBlocks, usedBlocks)) {
+                            addBlockToStructure(blocksList, palette, paletteMap, x, y, z, blockType, paletteIndex);
+                            usedBlocks.put(blockType, usedBlocks.getOrDefault(blockType, 0) + 1);
+                        }
+                    }
+                    
+                    // Collect suitable wall positions for port placement (not corners, not edges, not floor/ceiling)
+                    if (isWallPosition(x, y, z, width, height, length) && 
+                        !isCornerPosition(x, y, z, width, height, length) && 
+                        !isEdgePosition(x, y, z, width, height, length) &&
+                        y > 0 && y < height - 1) {
+                        wallPositions.add(new BlockPosition(x, y, z));
+                    }
+                }
+            }
+        }
+
+        // Add random ports
+        addRandomPorts(blocks, wallPositions, availableBlocks, usedBlocks, blocksList, palette, paletteMap, paletteIndex, width, height, length);
+
+        nbt.put("blocks", blocksList);
+        nbt.put("palette", palette);
+        MultiblockStructure structure = new MultiblockStructure(rl("runtime"), nbt, "mekanism_fission_reactor");
+
+        return structure;
+    }
+
+    private static MultiblockStructure generateTurbine(List<ItemStack> blocks, int height, int width, int length) {
+        // Validate dimensions
+        if (!validateTurbineDimensions(height, width, length)) {
+            return null;
+        }
+
+        // Create block availability map with stack counts
+        Map<String, Integer> availableBlocks = createBlockAvailabilityMap(blocks);
+        Map<String, Integer> usedBlocks = new HashMap<>();
+
+        CompoundTag nbt = new CompoundTag();
+        ListTag blocksList = new ListTag();
+        ListTag palette = new ListTag();
+        Map<String, Integer> paletteMap = new HashMap<>();
+        AtomicInteger paletteIndex = new AtomicInteger(0);
+
+        // Collect wall positions for port placement (excluding corners and edges)
+        List<BlockPosition> wallPositions = new ArrayList<>();
+
+        // Use vents as available, no pre-calculation needed
+
+        // Generate structure in 3 steps: floor, ceiling, then other layers
+        
+        // Step 1: Generate floor (y = 0)
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < length; z++) {
+                int y = 0; // Floor level
+                String blockType = determineTurbineBlockType(x, y, z, width, height, length, availableBlocks, usedBlocks);
+                if (blockType != null) {
+                    // Check if we have enough blocks
+                    if (canUseBlock(blockType, availableBlocks, usedBlocks)) {
+                        addBlockToStructure(blocksList, palette, paletteMap, x, y, z, blockType, paletteIndex);
+                        usedBlocks.put(blockType, usedBlocks.getOrDefault(blockType, 0) + 1);
+                    }
+                }
+            }
+        }
+        
+        // Step 2: Generate ceiling (y = height - 1)
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < length; z++) {
+                int y = height - 1; // Ceiling level
+                String blockType = determineTurbineBlockType(x, y, z, width, height, length, availableBlocks, usedBlocks);
+                if (blockType != null) {
+                    // Check if we have enough blocks
+                    if (canUseBlock(blockType, availableBlocks, usedBlocks)) {
+                        addBlockToStructure(blocksList, palette, paletteMap, x, y, z, blockType, paletteIndex);
+                        usedBlocks.put(blockType, usedBlocks.getOrDefault(blockType, 0) + 1);
+                    }
+                }
+            }
+        }
+        
+        // Step 3: Generate other layers (y = 1 to height - 2)
+        for (int x = 0; x < width; x++) {
+            for (int y = 1; y < height - 1; y++) {
+                for (int z = 0; z < length; z++) {
+                    String blockType = determineTurbineBlockType(x, y, z, width, height, length, availableBlocks, usedBlocks);
+                    if (blockType != null) {
+                        // Check if we have enough blocks
+                        if (canUseBlock(blockType, availableBlocks, usedBlocks)) {
+                            addBlockToStructure(blocksList, palette, paletteMap, x, y, z, blockType, paletteIndex);
+                            usedBlocks.put(blockType, usedBlocks.getOrDefault(blockType, 0) + 1);
+                        }
+                    }
+                    
+                    // Collect suitable wall positions for port placement (not corners, not edges, not floor/ceiling)
+                    if (isWallPosition(x, y, z, width, height, length) && 
+                        !isCornerPosition(x, y, z, width, height, length) && 
+                        !isEdgePosition(x, y, z, width, height, length) &&
+                        y > 0 && y < height - 1) {
+                        wallPositions.add(new BlockPosition(x, y, z));
+                    }
+                }
+            }
+        }
+
+        // Add turbine ports
+        addTurbinePorts(wallPositions, availableBlocks, usedBlocks, blocksList, palette, paletteMap, paletteIndex, width, height, length);
+
+        nbt.put("blocks", blocksList);
+        nbt.put("palette", palette);
+        MultiblockStructure structure = new MultiblockStructure(rl("runtime"), nbt, "mekanism_turbine");
+
+        return structure;
+    }
+
+    private static boolean isSetForBoiler(List<ItemStack> blocks) {
+        for(ItemStack block : blocks) {
+            if(block.getItem().toString().contains("boiler")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private static boolean isSetForFissionReactor(List<ItemStack> blocks) {
+        for(ItemStack block : blocks) {
+            if(block.getItem().toString().contains("fission_reactor")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isSetForTurbine(List<ItemStack> blocks) {
+        for(ItemStack block : blocks) {
+            if(block.getItem().toString().contains("turbine")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Helper classes and methods for fission reactor generation
+
+    private static class BlockPosition {
+        final int x, y, z;
+
+        BlockPosition(int x, int y, int z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
+    private static boolean validateDimensions(int height, int width, int length) {
+        // Minimum size check (3x4x3)
+        if (width < 3 || height < 4 || length < 3) {
+            return false;
+        }
+        
+        // Maximum size check (18x18x18)
+        if (width > 18 || height > 18 || length > 18) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    private static Map<String, Integer> createBlockAvailabilityMap(List<ItemStack> blocks) {
+        Map<String, Integer> availableBlocks = new HashMap<>();
+        int ports = howManyPorts(blocks);
+        int adapters = howManyAdapters(blocks);
+        boolean hasGlass = hasGlass(blocks);
+        for (ItemStack stack : blocks) {
+            String blockName = getBlockName(stack);
+            int count = stack.getCount();
+            if(stack.getItem().toString().contains("glass")) {
+                count += ports;
+                count += adapters;
+            }
+            if(!hasGlass && stack.getItem().toString().contains("casing")) {
+                count += ports;
+                count += adapters;
+            }
+            availableBlocks.put(blockName, availableBlocks.getOrDefault(blockName, 0) + count);
+        }
+        
+        return availableBlocks;
+    }
+
+    private static boolean hasGlass(List<ItemStack> blocks) {
+        for (ItemStack stack : blocks) {
+            if(stack.getItem().toString().contains("glass")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int howManyAdapters(List<ItemStack> blocks) {
+        int count = 0;
+        for (ItemStack stack : blocks) {
+            if(stack.getItem().toString().contains("logic_adapter")) {
+                count += stack.getCount();
+            }
+        }
+        return  count;
+    }
+
+    private static int howManyPorts(List<ItemStack> blocks) {
+        int count = 0;
+        for (ItemStack stack : blocks) {
+            if(stack.getItem().toString().contains("port") || stack.getItem().toString().contains("valve")) {
+                count += stack.getCount();
+            }
+        }
+        return  count;
+    }
+
+    private static String getBlockName(ItemStack stack) {
+        // Get the registry name which is in format "modid:item_id"
+        // For items that correspond to blocks, we need to get the block's registry name
+        String registryName = stack.getItem().builtInRegistryHolder().key().identifier().toString();
+        
+        // Convert item registry name to block registry name if needed
+        // Most items have the same registry name as their corresponding blocks
+        // but some might have "_item" suffix that needs to be removed
+        if (registryName.endsWith("_item")) {
+            registryName = registryName.substring(0, registryName.length() - 5);
+        }
+        
+        return registryName;
+    }
+
+    private static boolean canUseBlock(String blockType, Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        int available = availableBlocks.getOrDefault(blockType, 0);
+        int used = usedBlocks.getOrDefault(blockType, 0);
+        return available > used;
+    }
+
+    private static String determineBlockType(int x, int y, int z, int width, int height, int length, 
+                                           Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        boolean isCorner = isCornerPosition(x, y, z, width, height, length);
+        boolean isEdge = isEdgePosition(x, y, z, width, height, length);
+        boolean isWall = isWallPosition(x, y, z, width, height, length);
+        boolean isInterior = !isWall;
+        boolean isFloor = (y == 0);
+        boolean isCeiling = (y == height - 1);
+        
+        // Structure logic
+        if (isCorner || isEdge) {
+            return "mekanismgenerators:fission_reactor_casing";
+        }
+        
+        if (isWall || isCeiling || isFloor) {
+            // Use glass if available, otherwise casing (for walls, ceiling, and floor)
+            if (availableBlocks.containsKey("mekanismgenerators:reactor_glass") && 
+                canUseBlock("mekanismgenerators:reactor_glass", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:reactor_glass";
+            }
+            return "mekanismgenerators:fission_reactor_casing";
+        }
+        
+        if (isInterior) {
+            return determineInteriorBlock(x, y, z, width, height, length, availableBlocks, usedBlocks);
+        }
+        
+        return null; // Air/empty space
+    }
+
+    private static String determineInteriorBlock(int x, int y, int z, int width, int height, int length,
+                                               Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        // Interior coordinates (excluding walls)
+        int interiorX = x - 1;
+        int interiorZ = z - 1;
+        
+        // Checkerboard pattern for fuel assemblies - works for both odd and even dimensions
+        boolean isFuelPosition = (interiorX + interiorZ) % 2 == 0;
+        
+        if (!isFuelPosition) {
+            return null; // Air space
+        }
+        
+        // Bottom layer: fuel assembly
+        if (y == 1) {
+            if (availableBlocks.containsKey("mekanismgenerators:fission_fuel_assembly") &&
+                canUseBlock("mekanismgenerators:fission_fuel_assembly", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:fission_fuel_assembly";
+            }
+        }
+        
+        // Middle layers: continue fuel assembly tower
+        if (y > 1 && y < height - 2) {
+            if (availableBlocks.containsKey("mekanismgenerators:fission_fuel_assembly") &&
+                canUseBlock("mekanismgenerators:fission_fuel_assembly", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:fission_fuel_assembly";
+            }
+        }
+        
+        // Top of tower: control rod
+        if (y == height - 2) {
+            if (availableBlocks.containsKey("mekanismgenerators:control_rod_assembly") &&
+                canUseBlock("mekanismgenerators:control_rod_assembly", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:control_rod_assembly";
+            }
+            // Fallback to fuel assembly if no control rods
+            if (availableBlocks.containsKey("mekanismgenerators:fission_fuel_assembly") &&
+                canUseBlock("mekanismgenerators:fission_fuel_assembly", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:fission_fuel_assembly";
+            }
+        }
+        
+        return null;
+    }
+
+    private static boolean isCornerPosition(int x, int y, int z, int width, int height, int length) {
+        boolean isXEdge = (x == 0 || x == width - 1);
+        boolean isYEdge = (y == 0 || y == height - 1);
+        boolean isZEdge = (z == 0 || z == length - 1);
+        
+        // Corner if on 3 edges, or on 2 edges including Y
+        return (isXEdge && isYEdge && isZEdge) || 
+               (isYEdge && ((isXEdge && isZEdge)));
+    }
+
+    private static boolean isEdgePosition(int x, int y, int z, int width, int height, int length) {
+        boolean isXEdge = (x == 0 || x == width - 1);
+        boolean isYEdge = (y == 0 || y == height - 1);
+        boolean isZEdge = (z == 0 || z == length - 1);
+        
+        // Edge if on exactly 2 faces
+        int edgeCount = (isXEdge ? 1 : 0) + (isYEdge ? 1 : 0) + (isZEdge ? 1 : 0);
+        return edgeCount == 2 && !isCornerPosition(x, y, z, width, height, length);
+    }
+
+    private static boolean isWallPosition(int x, int y, int z, int width, int height, int length) {
+        return (x == 0 || x == width - 1 || y == 0 || y == height - 1 || z == 0 || z == length - 1);
+    }
+
+    private static void addBlockToStructure(ListTag blocksList, ListTag palette, 
+                                          Map<String, Integer> paletteMap,
+                                          int x, int y, int z, String blockType, 
+                                          AtomicInteger paletteIndex) {
+        // Skip air blocks - they should not be added to the structure
+        if (blockType == null || blockType.equals("minecraft:air") || 
+            blockType.equals("minecraft:cave_air") || blockType.equals("minecraft:void_air")) {
+            return;
+        }
+        
+        // Add to palette if new
+        if (!paletteMap.containsKey(blockType)) {
+            CompoundTag paletteEntry = new CompoundTag();
+            paletteEntry.putString("Name", blockType);
+            palette.add(paletteEntry);
+            paletteMap.put(blockType, paletteIndex.getAndIncrement());
+        }
+        
+        // Create block entry
+        CompoundTag blockEntry = new CompoundTag();
+        ListTag pos = new ListTag();
+        pos.add(IntTag.valueOf(x));
+        pos.add(IntTag.valueOf(y));
+        pos.add(IntTag.valueOf(z));
+        
+        blockEntry.put("pos", pos);
+        blockEntry.putInt("state", paletteMap.get(blockType));
+        
+        blocksList.add(blockEntry);
+    }
+
+    private static void addRandomPorts(List<ItemStack> blocks, List<BlockPosition> wallPositions,
+                                     Map<String, Integer> availableBlocks,
+                                     Map<String, Integer> usedBlocks,
+                                     ListTag blocksList, ListTag palette, 
+                                     Map<String, Integer> paletteMap,
+                                     AtomicInteger paletteIndex, 
+                                     int width, int height, int length) {
+        int ports = howManyPorts(blocks);
+        int adapters = howManyAdapters(blocks);
+        
+        // Create a list of port types to place based on available counts
+        List<String> portsToPlace = new ArrayList<>();
+        
+        // Add fission reactor ports
+        String portType = "mekanismgenerators:fission_reactor_port";
+        if (availableBlocks.containsKey(portType)) {
+            int availablePorts = availableBlocks.get(portType) - usedBlocks.getOrDefault(portType, 0);
+            for (int i = 0; i < Math.min(ports, availablePorts); i++) {
+                portsToPlace.add(portType);
+            }
+        }
+        
+        // Add logic adapters
+        String adapterType = "mekanismgenerators:fission_reactor_logic_adapter";
+        if (availableBlocks.containsKey(adapterType)) {
+            int availableAdapters = availableBlocks.get(adapterType) - usedBlocks.getOrDefault(adapterType, 0);
+            for (int i = 0; i < Math.min(adapters, availableAdapters); i++) {
+                portsToPlace.add(adapterType);
+            }
+        }
+        
+        if (portsToPlace.isEmpty()) return;
+        
+        // Ensure we don't try to place more ports than available wall positions
+        int totalPortsToPlace = Math.min(portsToPlace.size(), wallPositions.size());
+        
+        Collections.shuffle(wallPositions);
+        Collections.shuffle(portsToPlace);
+        
+        // Track what block types are being replaced by ports
+        Map<String, Integer> replacedBlockCounts = new HashMap<>();
+        
+        int portsPlaced = 0;
+        for (int i = 0; i < wallPositions.size() && portsPlaced < totalPortsToPlace; i++) {
+            BlockPosition pos = wallPositions.get(i);
+            String currentPortType = portsToPlace.get(portsPlaced);
+            
+            if (canUseBlock(currentPortType, availableBlocks, usedBlocks)) {
+                // Determine what block type would have been placed at this position
+                String replacedBlockType = determineReplacedBlockType(pos.x, pos.y, pos.z, width, height, length, availableBlocks, usedBlocks);
+                
+                // Track the replaced block type
+                if (replacedBlockType != null) {
+                    replacedBlockCounts.put(replacedBlockType, replacedBlockCounts.getOrDefault(replacedBlockType, 0) + 1);
+                }
+                
+                // Add port block to structure
+                addBlockToStructure(blocksList, palette, paletteMap, pos.x, pos.y, pos.z, currentPortType, paletteIndex);
+                usedBlocks.put(currentPortType, usedBlocks.getOrDefault(currentPortType, 0) + 1);
+                portsPlaced++;
+            }
+        }
+        
+        // Adjust the counts of replaced block types by the total number of ports that replaced them
+        for (Map.Entry<String, Integer> entry : replacedBlockCounts.entrySet()) {
+            String blockType = entry.getKey();
+            int replacedCount = entry.getValue();
+            int currentUsed = usedBlocks.getOrDefault(blockType, 0);
+            if (currentUsed >= replacedCount) {
+                usedBlocks.put(blockType, currentUsed - replacedCount);
+            }
+        }
+    }
+
+    private static String determineReplacedBlockType(int x, int y, int z, int width, int height, int length,
+                                                   Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        boolean isCorner = isCornerPosition(x, y, z, width, height, length);
+        boolean isEdge = isEdgePosition(x, y, z, width, height, length);
+        boolean isWall = isWallPosition(x, y, z, width, height, length);
+        boolean isFloor = (y == 0);
+        boolean isCeiling = (y == height - 1);
+        
+        // Same logic as determineBlockType but for determining what would have been placed
+        if (isCorner || isEdge) {
+            return "mekanismgenerators:fission_reactor_casing";
+        }
+        
+        if (isWall || isCeiling || isFloor) {
+            // Check if glass would have been used
+            if (availableBlocks.containsKey("mekanismgenerators:reactor_glass")) {
+                return "mekanismgenerators:reactor_glass";
+            }
+            return "mekanismgenerators:fission_reactor_casing";
+        }
+        
+        return null; // Should not happen for wall positions
+    }
+
+    // Helper methods for turbine generation
+
+    private static boolean validateTurbineDimensions(int height, int width, int length) {
+        // Width and length must be odd numbers
+        if (width % 2 == 0 || length % 2 == 0) {
+            return false;
+        }
+        
+        // Minimum size check (3x4x3)
+        if (width < 3 || height < 4 || length < 3) {
+            return false;
+        }
+        
+        // Maximum size check (17x18x17)
+        if (width > 17 || height > 18 || length > 17) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    private static String determineTurbineBlockType(int x, int y, int z, int width, int height, int length, 
+                                                  Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        boolean isCorner = isCornerPosition(x, y, z, width, height, length);
+        boolean isEdge = isEdgePosition(x, y, z, width, height, length);
+        boolean isWall = isWallPosition(x, y, z, width, height, length);
+        boolean isInterior = !isWall;
+        boolean isFloor = (y == 0);
+        boolean isCeiling = (y == height - 1);
+        
+        // Structure logic
+        if (isCorner || isEdge) {
+            return "mekanismgenerators:turbine_casing";
+        }
+        
+        if (isFloor) {
+            // Use structural glass if available, otherwise casing
+            if (availableBlocks.containsKey("mekanism:structural_glass") && 
+                canUseBlock("mekanism:structural_glass", availableBlocks, usedBlocks)) {
+                return "mekanism:structural_glass";
+            }
+            return "mekanismgenerators:turbine_casing";
+        }
+        
+        if (isCeiling) {
+            // Priority: vents first, then glass if vents run out, then casing as fallback
+            if (availableBlocks.containsKey("mekanismgenerators:turbine_vent") && 
+                canUseBlock("mekanismgenerators:turbine_vent", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:turbine_vent";
+            } else if (availableBlocks.containsKey("mekanism:structural_glass") && 
+                       canUseBlock("mekanism:structural_glass", availableBlocks, usedBlocks)) {
+                return "mekanism:structural_glass";
+            } else {
+                return "mekanismgenerators:turbine_casing";
+            }
+        }
+        
+        if (isWall) {
+            // Calculate rotor height for wall vent placement
+            int rotorHeight = height - 3;
+            if (y >= rotorHeight && 
+                availableBlocks.containsKey("mekanismgenerators:turbine_vent") && 
+                canUseBlock("mekanismgenerators:turbine_vent", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:turbine_vent";
+            }
+            // Use structural glass if available, otherwise casing
+            if (availableBlocks.containsKey("mekanism:structural_glass") && 
+                canUseBlock("mekanism:structural_glass", availableBlocks, usedBlocks)) {
+                return "mekanism:structural_glass";
+            }
+            return "mekanismgenerators:turbine_casing";
+        }
+        
+        if (isInterior) {
+            return determineTurbineInteriorBlock(x, y, z, width, height, length, availableBlocks, usedBlocks);
+        }
+        
+        return null; // Air/empty space
+    }
+
+    private static String determineTurbineInteriorBlock(int x, int y, int z, int width, int height, int length,
+                                                      Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        // Center coordinates calculation
+        int centerX = width / 2;
+        int centerZ = length / 2;
+        boolean isCenter = (x == centerX && z == centerZ);
+        
+        // Calculate rotor height (leave room for coils and condenser)
+        int rotorHeight = height - 3;
+        
+        // Central rotor shaft (from y=1 to rotorHeight-1)
+        if (isCenter && y >= 1 && y < rotorHeight) {
+            if (availableBlocks.containsKey("mekanismgenerators:turbine_rotor") &&
+                canUseBlock("mekanismgenerators:turbine_rotor", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:turbine_rotor";
+            }
+        }
+        
+        // Rotational complex (top of rotor shaft)
+        if (isCenter && y == rotorHeight) {
+            if (availableBlocks.containsKey("mekanismgenerators:rotational_complex") &&
+                canUseBlock("mekanismgenerators:rotational_complex", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:rotational_complex";
+            }
+        }
+        
+        // Electromagnetic coils (above rotational complex)
+        if (isCenter && y > rotorHeight && y < height - 1) {
+            if (availableBlocks.containsKey("mekanismgenerators:electromagnetic_coil") &&
+                canUseBlock("mekanismgenerators:electromagnetic_coil", availableBlocks, usedBlocks)) {
+                return "mekanismgenerators:electromagnetic_coil";
+            }
+        }
+        
+        // Pressure dispersers (same level as rotational complex, all interior space except center)
+        if (y == rotorHeight && !isCenter) {
+            if (availableBlocks.containsKey("mekanism:pressure_disperser") &&
+                canUseBlock("mekanism:pressure_disperser", availableBlocks, usedBlocks)) {
+                return "mekanism:pressure_disperser";
+            }
+        }
+        
+        // Saturating condensers (above pressure dispersers and around electromagnetic coils)
+        if (y > rotorHeight && y < height - 1) {
+            int distanceFromCenter = Math.max(Math.abs(x - centerX), Math.abs(z - centerZ));
+            if (distanceFromCenter >= 1 && distanceFromCenter <= 2) {
+                if (availableBlocks.containsKey("mekanismgenerators:saturating_condenser") &&
+                    canUseBlock("mekanismgenerators:saturating_condenser", availableBlocks, usedBlocks)) {
+                    return "mekanismgenerators:saturating_condenser";
+                }
+            }
+        }
+        
+        return null; // Air space
+    }
+
+    private static void addTurbinePorts(List<BlockPosition> wallPositions, 
+                                      Map<String, Integer> availableBlocks,
+                                      Map<String, Integer> usedBlocks,
+                                      ListTag blocksList, ListTag palette, 
+                                      Map<String, Integer> paletteMap,
+                                      AtomicInteger paletteIndex, 
+                                      int width, int height, int length) {
+        String portType = "mekanismgenerators:turbine_valve";
+        
+        // Check if turbine valves are available
+        if (!availableBlocks.containsKey(portType) || 
+            !canUseBlock(portType, availableBlocks, usedBlocks)) {
+            return;
+        }
+        
+        // Use all available turbine valves, but don't exceed available wall positions
+        int availableValves = availableBlocks.get(portType) - usedBlocks.getOrDefault(portType, 0);
+        int portsToPlace = Math.min(availableValves, wallPositions.size());
+        
+        Collections.shuffle(wallPositions);
+        
+        // Track what block types are being replaced by ports
+        Map<String, Integer> replacedBlockCounts = new HashMap<>();
+        
+        int portsPlaced = 0;
+        for (int i = 0; i < wallPositions.size() && portsPlaced < portsToPlace; i++) {
+            BlockPosition pos = wallPositions.get(i);
+            
+            if (canUseBlock(portType, availableBlocks, usedBlocks)) {
+                // Determine what block type would have been placed at this position
+                String replacedBlockType = determineTurbineReplacedBlockType(pos.x, pos.y, pos.z, width, height, length, availableBlocks, usedBlocks);
+                
+                // Track the replaced block type
+                if (replacedBlockType != null) {
+                    replacedBlockCounts.put(replacedBlockType, replacedBlockCounts.getOrDefault(replacedBlockType, 0) + 1);
+                }
+                
+                // Add port block to structure
+                addBlockToStructure(blocksList, palette, paletteMap, pos.x, pos.y, pos.z, portType, paletteIndex);
+                usedBlocks.put(portType, usedBlocks.getOrDefault(portType, 0) + 1);
+                portsPlaced++;
+            }
+        }
+        
+        // Adjust the counts of replaced block types by the total number of ports that replaced them
+        for (Map.Entry<String, Integer> entry : replacedBlockCounts.entrySet()) {
+            String blockType = entry.getKey();
+            int replacedCount = entry.getValue();
+            int currentUsed = usedBlocks.getOrDefault(blockType, 0);
+            if (currentUsed >= replacedCount) {
+                usedBlocks.put(blockType, currentUsed - replacedCount);
+            }
+        }
+    }
+
+    private static String determineTurbineReplacedBlockType(int x, int y, int z, int width, int height, int length,
+                                                          Map<String, Integer> availableBlocks, Map<String, Integer> usedBlocks) {
+        boolean isCorner = isCornerPosition(x, y, z, width, height, length);
+        boolean isEdge = isEdgePosition(x, y, z, width, height, length);
+        boolean isWall = isWallPosition(x, y, z, width, height, length);
+        boolean isFloor = (y == 0);
+        boolean isCeiling = (y == height - 1);
+        
+        // Same logic as determineTurbineBlockType but for determining what would have been placed
+        if (isCorner || isEdge) {
+            return "mekanismgenerators:turbine_casing";
+        }
+        
+        if (isFloor) {
+            // Check if structural glass would have been used
+            if (availableBlocks.containsKey("mekanism:structural_glass")) {
+                return "mekanism:structural_glass";
+            }
+            return "mekanismgenerators:turbine_casing";
+        }
+        
+        if (isCeiling) {
+            // Same priority as determineTurbineBlockType: vents first, then glass, then casing
+            if (availableBlocks.containsKey("mekanismgenerators:turbine_vent")) {
+                return "mekanismgenerators:turbine_vent";
+            } else if (availableBlocks.containsKey("mekanism:structural_glass")) {
+                return "mekanism:structural_glass";
+            } else {
+                return "mekanismgenerators:turbine_casing";
+            }
+        }
+        
+        if (isWall) {
+            // Calculate rotor height for wall vent placement
+            int rotorHeight = height - 3;
+            if (y >= rotorHeight && availableBlocks.containsKey("mekanismgenerators:turbine_vent")) {
+                return "mekanismgenerators:turbine_vent";
+            }
+            // Check if structural glass would have been used
+            if (availableBlocks.containsKey("mekanism:structural_glass")) {
+                return "mekanism:structural_glass";
+            }
+            return "mekanismgenerators:turbine_casing";
+        }
+        
+        return null; // Should not happen for wall positions
+    }
+}

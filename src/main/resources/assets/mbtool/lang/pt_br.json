@@ -1,0 +1,23 @@
+{
+  "gui.mbtool.multiblock_gallery": "Galeria de multiblocos",
+  "gui.mbtool.structure_gallery": "Estruturas",
+  "gui.mbtool.preview": "Prévia",
+  "gui.mbtool.style_demo": "Estilo do botão",
+  "gui.mbtool.no_structure": "Sem estrutura",
+  "gui.mbtool.structure_description": "Prévia de %s",
+  "gui.mbtool.preview_tooltip": "Mostrar prévia da estrutura",
+  "gui.mbtool.selected_info": "%s (%s × %s × %s)",
+  "gui.mbtool.style": "Estilo: %s",
+  "gui.mbtool.preview_pressed": "Prévia: %s",
+  "gui.mbtool.styled_button_pressed": "Estilo: %s",
+  "gui.mbtool.no_structures_available": "Nenhuma estrutura disponível",
+  "gui.mbtool.selected_structure": "Estrutura selecionada",
+  "gui.mbtool.structure_grid": "Lista de estruturas",
+  "gui.mbtool.multiblock_button": "Prévia da estrutura",
+  "gui.mbtool.multiblock_button_example": "Exemplo de prévia",
+  "gui.mbtool.example_structure": "Estrutura de exemplo",
+  "gui.mbtool.transparent_button": "Prévia transparente",
+  "gui.mbtool.transparent_example": "Exemplo de prévia transparente",
+  "gui.mbtool.transparent_button_pressed": "Prévia selecionada",
+  "gui.mbtool.multiblock_button.instructions": "Selecione uma prévia"
+}

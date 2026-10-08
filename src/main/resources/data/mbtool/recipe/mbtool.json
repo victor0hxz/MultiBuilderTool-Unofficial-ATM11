@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PAS",
+    "GBG",
+    " W "
+  ],
+  "key": {
+    "P": "minecraft:diamond_pickaxe",
+    "S": "minecraft:diamond_shovel",
+    "A": "minecraft:beacon",
+    "B": "minecraft:book",
+    "W": "minecraft:stick",
+    "G": "minecraft:stone_button"
+  },
+  "result": {
+    "count": 1,
+    "id": "mbtool:mbtool"
+  }
+}
