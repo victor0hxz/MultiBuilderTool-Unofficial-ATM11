@@ -1,0 +1,16 @@
+{
+  "projectId": 1734577,
+  "fileId": 9105088,
+  "fileName": "MultiBuilder-26.1-1.3.0-atm11-0.9.0.jar",
+  "sha256": "38904fca8a0b86d8ce4cbe951bbf07f522ccf93663208a3cb13d064a562afc00",
+  "uploadedAtUtc": "2026-10-09T05:33:50.5120405Z",
+  "deferredRelations": [],
+  "gameVersions": [
+    16082,
+    10150,
+    9638,
+    9639
+  ],
+  "fileUrl": "https://www.curseforge.com/minecraft/mc-mods/multi-builder-tool-unofficial-atm11-compatibility/files/9105088",
+  "status": "Uploaded; moderation approval must be checked in author portal"
+}

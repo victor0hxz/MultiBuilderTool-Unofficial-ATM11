@@ -1,0 +1,6 @@
+{
+  "displayName": "MultiBuilder-26.1-1.3.0-atm11-0.9.0.jar",
+  "changelog": "Initial unofficial fan compatibility build for ATM11 0.9.0 and Minecraft 26.1.2.\n\nProvides structure selection and 3D previews, automatic construction and dismantling, rotation and block equivalence. This is a compatibility fix build of the existing official 26.1.2 version, including energy/inventory capabilities and large-stack persistence.\n\nValidated in isolated client/server worlds. Full-pack gameplay testing remains necessary.\n",
+  "changelogType": "markdown",
+  "releaseType": "beta"
+}
