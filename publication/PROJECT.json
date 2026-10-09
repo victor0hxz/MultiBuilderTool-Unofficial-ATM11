@@ -1,0 +1,31 @@
+{
+  "name": "Multi Builder Tool - Unofficial ATM11 Compatibility Port",
+  "summary": "Unofficial fan compatibility adaptation of Multi Builder Tool for Minecraft 26.1.2 and ATM11 0.9.0.",
+  "game": "Minecraft",
+  "class": "Mods",
+  "mainCategory": "Utility & QoL",
+  "additionalCategories": [
+    "Addons"
+  ],
+  "license": "MIT",
+  "sourceUrl": "https://github.com/victor0hxz/MultiBuilderTool-Unofficial-ATM11",
+  "issuesUrl": "https://github.com/victor0hxz/MultiBuilderTool-Unofficial-ATM11/issues",
+  "releaseType": "beta",
+  "gameVersions": [
+    "26.1.2"
+  ],
+  "modLoader": "NeoForge",
+  "javaVersion": 25,
+  "dependenciesNotes": "NeoForge. Optional integrations: Mekanism Version Locked 2.1, JEI 29.37.0.99, AE2 26.1.12-beta and GuideME 26.1.12-beta",
+  "upstream": "https://github.com/igentuman/multi-builder-tool/tree/26.1",
+  "originalAuthors": "igentuman",
+  "jar": "MultiBuilder-26.1-1.3.0-atm11-0.9.0.jar",
+  "sha256": "38904fca8a0b86d8ce4cbe951bbf07f522ccf93663208a3cb13d064a562afc00",
+  "status": "Created; portal status New; file uploads not yet verified",
+  "packagingNotes": "Original MIT license embedded in META-INF for standalone CurseForge distribution; production bytecode unchanged from tested GitHub build.",
+  "projectId": 1734577,
+  "slug": "multi-builder-tool-unofficial-atm11-compatibility",
+  "curseforgeUrl": "https://www.curseforge.com/minecraft/mc-mods/multi-builder-tool-unofficial-atm11-compatibility",
+  "publicationTitle": "Multi Builder Tool: Version Locked",
+  "logoSubtitle": "VERSION LOCKED"
+}
