@@ -21,11 +21,15 @@
   "originalAuthors": "igentuman",
   "jar": "MultiBuilder-26.1-1.3.0-atm11-0.9.0.jar",
   "sha256": "38904fca8a0b86d8ce4cbe951bbf07f522ccf93663208a3cb13d064a562afc00",
-  "status": "Created; portal status New; file uploads not yet verified",
+  "status": "JAR uploaded; moderation status not independently verified",
   "packagingNotes": "Original MIT license embedded in META-INF for standalone CurseForge distribution; production bytecode unchanged from tested GitHub build.",
   "projectId": 1734577,
   "slug": "multi-builder-tool-unofficial-atm11-compatibility",
   "curseforgeUrl": "https://www.curseforge.com/minecraft/mc-mods/multi-builder-tool-unofficial-atm11-compatibility",
   "publicationTitle": "Multi Builder Tool: Version Locked",
-  "logoSubtitle": "VERSION LOCKED"
+  "logoSubtitle": "VERSION LOCKED",
+  "fileId": 9105088,
+  "fileUrl": "https://www.curseforge.com/minecraft/mc-mods/multi-builder-tool-unofficial-atm11-compatibility/files/9105088",
+  "pendingRelations": [],
+  "profileLogoStatus": "Version Locked PNG published on GitHub; native CurseForge logo replacement not confirmed"
 }
