@@ -6,7 +6,7 @@ plugins {
 }
 
 // Update version and archivesBaseName
-version = '1.3.0-atm11-0.9.0' // Increment version
+version = '1.3.0-port2-atm11-0.9.0'
 group = 'igentuman.mbtool'
 
 tasks.named('wrapper', Wrapper).configure {

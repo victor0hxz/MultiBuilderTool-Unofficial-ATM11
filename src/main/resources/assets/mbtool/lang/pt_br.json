@@ -19,5 +19,6 @@
   "gui.mbtool.transparent_button": "Prévia transparente",
   "gui.mbtool.transparent_example": "Exemplo de prévia transparente",
   "gui.mbtool.transparent_button_pressed": "Prévia selecionada",
-  "gui.mbtool.multiblock_button.instructions": "Selecione uma prévia"
+  "gui.mbtool.multiblock_button.instructions": "Selecione uma prévia",
+  "mbtool.structure.naquadah_reactor": "Reator de Naquadah"
 }

@@ -177,5 +177,6 @@
   "gui.mbtool.transparent_button": "Transparent preview",
   "gui.mbtool.transparent_example": "Transparent preview example",
   "gui.mbtool.transparent_button_pressed": "Preview selected",
-  "gui.mbtool.multiblock_button.instructions": "Select a preview"
+  "gui.mbtool.multiblock_button.instructions": "Select a preview",
+  "mbtool.structure.naquadah_reactor": "Naquadah Reactor"
 }

@@ -1,5 +1,5 @@
 package igentuman.mbtool.integration;
 
-// KubeJS not available for NeoForge 26.1 yet
+// Compatibility placeholder. No KubeJS plugin declaration is shipped.
 public class MbtoolKubeJSPlugin {
 }
